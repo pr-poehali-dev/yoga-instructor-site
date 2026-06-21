@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import Icon from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
+
+const SEND_REQUEST_URL = 'https://functions.poehali.dev/f9491af6-cb96-458a-a137-853841e53cca';
 
 const HERO = 'https://cdn.poehali.dev/projects/09183084-ebb5-419d-89cb-2cf7cad2be05/files/213ef681-0ada-4065-bff2-3f5869514b33.jpg';
 const PORTRAIT = 'https://cdn.poehali.dev/projects/09183084-ebb5-419d-89cb-2cf7cad2be05/files/3d384b5e-795e-4796-af9d-ca25f9b0a440.jpg';
@@ -50,8 +53,34 @@ const BLOG = [
 ];
 
 const Index = () => {
+  const { toast } = useToast();
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [form, setForm] = useState({ name: '', phone: '', message: '' });
+  const [sending, setSending] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name.trim() || !form.phone.trim()) {
+      toast({ title: 'Заполните имя и телефон', variant: 'destructive' });
+      return;
+    }
+    setSending(true);
+    try {
+      const res = await fetch(SEND_REQUEST_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      if (!res.ok) throw new Error();
+      toast({ title: 'Заявка отправлена!', description: 'Анна свяжется с вами в ближайшее время.' });
+      setForm({ name: '', phone: '', message: '' });
+    } catch {
+      toast({ title: 'Не удалось отправить', description: 'Попробуйте позже или позвоните напрямую.', variant: 'destructive' });
+    } finally {
+      setSending(false);
+    }
+  };
 
   useEffect(() => {
     const els = document.querySelectorAll('.reveal');
@@ -278,11 +307,11 @@ const Index = () => {
                 ))}
               </div>
             </div>
-            <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
-              <input type="text" placeholder="Ваше имя" className="w-full bg-primary-foreground/10 border border-primary-foreground/20 rounded-sm px-4 py-3 text-primary-foreground placeholder:text-primary-foreground/50 focus:outline-none focus:border-primary-foreground/50 transition-colors" />
-              <input type="tel" placeholder="Телефон" className="w-full bg-primary-foreground/10 border border-primary-foreground/20 rounded-sm px-4 py-3 text-primary-foreground placeholder:text-primary-foreground/50 focus:outline-none focus:border-primary-foreground/50 transition-colors" />
-              <textarea placeholder="Сообщение" rows={4} className="w-full bg-primary-foreground/10 border border-primary-foreground/20 rounded-sm px-4 py-3 text-primary-foreground placeholder:text-primary-foreground/50 focus:outline-none focus:border-primary-foreground/50 transition-colors resize-none" />
-              <Button type="submit" variant="secondary" className="w-full rounded-sm h-12 text-base">Отправить заявку</Button>
+            <form className="space-y-4" onSubmit={handleSubmit}>
+              <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Ваше имя" className="w-full bg-primary-foreground/10 border border-primary-foreground/20 rounded-sm px-4 py-3 text-primary-foreground placeholder:text-primary-foreground/50 focus:outline-none focus:border-primary-foreground/50 transition-colors" />
+              <input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="Телефон" className="w-full bg-primary-foreground/10 border border-primary-foreground/20 rounded-sm px-4 py-3 text-primary-foreground placeholder:text-primary-foreground/50 focus:outline-none focus:border-primary-foreground/50 transition-colors" />
+              <textarea value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} placeholder="Сообщение" rows={4} className="w-full bg-primary-foreground/10 border border-primary-foreground/20 rounded-sm px-4 py-3 text-primary-foreground placeholder:text-primary-foreground/50 focus:outline-none focus:border-primary-foreground/50 transition-colors resize-none" />
+              <Button type="submit" disabled={sending} variant="secondary" className="w-full rounded-sm h-12 text-base">{sending ? 'Отправляем…' : 'Отправить заявку'}</Button>
             </form>
           </div>
         </div>
